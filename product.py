@@ -1,19 +1,12 @@
 
 import requests
-from constants import *
 import mysql.connector
 from mysql.connector import errorcode
+from connection import *
 
 class Product:
-	"""This class will initiate and give all the methods for the class Product"""
 
-	def __init__(self):
-		Product.saved_code = 0
-		Product.category_choice = 0
-		self.entire_list = []
-
-
-	def get_categories_from_OFF_api(self, categories):
+	def get_categories_from_OFF_api(self, categories, entire_list):
 
 		double = []
 		for category in categories:	
@@ -60,97 +53,16 @@ class Product:
 					if double.count(my_product["code"]) == 2:
 						pass
 					else:
-						self.entire_list.append(products_list)
+						entire_list.append(products_list)
 						i += 1
 					
 					if i == 100:
 						break
 		
-		return self.entire_list
+		return entire_list
 
 
-	def database_tables_creation(self):
-		
-		# Establishing a connection	
-		connection1 = mysql.connector.connect(
-				user = user,
-				password = password,
-				host= host)
-
-		cursor = connection1.cursor()
-
-		tables = {}  # Creating a dictionnary to store the tables
-
-		tables['Category'] = (
-		    "CREATE TABLE IF NOT EXISTS `Category` ("
-		    "  `id` TINYINT(1) UNSIGNED NOT NULL AUTO_INCREMENT,"
-		    "  `name` VARCHAR(20) NOT NULL,"
-		    "  PRIMARY KEY (`id`),"
-		    "  UNIQUE INDEX ind_uni_cat (name)"
-		    ") ENGINE=InnoDB CHARACTER SET = 'utf8mb4'")
-
-		tables['Product'] = (
-			"CREATE TABLE IF NOT EXISTS `Product` ("
-		    "  `id` SMALLINT NOT NULL AUTO_INCREMENT,"
-		    "  `name` VARCHAR(255),"
-		    "  `description` VARCHAR(255),"
-		    "  `nutrition_grade` CHAR(1),"
-		    "  `barcode` VARCHAR(250) NOT NULL,"
-		    "  `url` VARCHAR(255),"
-		    "  `store` VARCHAR(255),"
-		    "  `prd_cat` TINYINT(1) UNSIGNED,"
-		    "  `fat` DECIMAL(5,2) UNSIGNED,"
-		    "  `saturated_fat` DECIMAL(5,2) UNSIGNED,"
-		    "  `sugar` DECIMAL(5,2) UNSIGNED,"
-		    "  `salt` DECIMAL(5,2) UNSIGNED,"
-		    "  PRIMARY KEY (`id`),"
-		    "  INDEX ind_nutri (nutrition_grade),"
-			"  UNIQUE INDEX ind_uni_code (barcode),"
-		    "  CONSTRAINT fk_prd_cat FOREIGN KEY (prd_cat) REFERENCES Category(id)"	    
-		    ") ENGINE=InnoDB CHARACTER SET = 'utf8mb4'")
-				
-		tables['Favourite'] = (
-			"CREATE TABLE IF NOT EXISTS `Favourite` ("
-		    "  `id` SMALLINT NOT NULL AUTO_INCREMENT,"
-		    "  `prd_to_be_replaced` VARCHAR(250) NOT NULL,"
-		    "  `barcode` VARCHAR(250),"
-		    "  PRIMARY KEY (`id`),"
-		    "  UNIQUE INDEX ind_prd_code (prd_to_be_replaced,barcode)"
-		    ") ENGINE=InnoDB CHARACTER SET = 'utf8mb4'")
-		
-
-		# Creating the database
-		try:
-			# if already exists so that we use that database
-			cursor.execute("USE {}".format(dbname))
-		except mysql.connector.Error as err:
-			if err.errno == errorcode.ER_BAD_DB_ERROR:
-				try:
-					cursor.execute(
-						"CREATE DATABASE IF NOT EXISTS {} CHARACTER SET 'utf8'".format(dbname))
-				except mysql.connector.Error as err:
-					print("Failed creating database: {}".format(err))
-					exit(1)
-				print("Database {} has been created successfully.".format(dbname))
-				connection1.database = dbname
-			else:
-				print(err)
-				exit(1)
-
-		# Creating the tables
-		for table_name in tables:
-			table_description = tables[table_name]
-			try:
-				cursor.execute(table_description)
-			except mysql.connector.Error as err:
-				print(err.msg)
-			print("Table {} has been created successfully.".format(table_name))
-				
-		cursor.close()
-		connection1.close()
-
-
-	def datas_insertion(self, connection):
+	def datas_insertion(self, connection, categories, entire_list):
 
 		cursor = connection.cursor()
 		
@@ -170,9 +82,9 @@ class Product:
 		else:
 			print("{} categories have been inserted in the 'Category' table.".format(len(categories)))	
 		
-		# Populating 'Product' table
+		# Populating table 'Product'
 		try:
-			for line in self.entire_list:
+			for line in entire_list:
 				
 				add_category = ("INSERT INTO Product "
 							"(name, description, nutrition_grade, barcode, "
@@ -200,15 +112,12 @@ class Product:
 		except:
 			pass
 		else:
-			print("{} entries have been inserted in the 'Product' table.".format(len(self.entire_list)))
+			print("{} entries have been inserted in the 'Product' table.".format(len(entire_list)))
 
 		connection.commit()
-		
-		cursor.close()
 
 
-	@classmethod
-	def categories_show(cls, categories):
+	def categories_show(self, categories):
 		
 		print("************** Catégories des Aliments *****************")
 		i_number = []
@@ -219,40 +128,43 @@ class Product:
 		
 		loop2 = True
 		while loop2:
-			Product.category_choice = input("Votre choix de catégorie: ")
+			print()
+			category_choice = input("Votre choix de catégorie: ")
 			try:
-				Product.category_choice = int(Product.category_choice)
+				category_choice = int(category_choice)
 			except:
 				pass
-			if Product.category_choice not in i_number:
+			if category_choice not in i_number:
 				continue
 			else:
 				loop2 = False
 
-		return Product.category_choice
+		return category_choice
 
-	@classmethod
-	def products_show(cls, category_choice, connection):
+
+	def products_show(self, category_choice, connection):
 		
 		cursor = connection.cursor()
-
-		sql_request = ("SELECT name,barcode FROM Product WHERE prd_cat=(%(category_choice)s)")
-		sql_value = {'category_choice': Product.category_choice,}
-
+		sql_request = ("SELECT name,nutrition_grade FROM Product WHERE prd_cat=(%(prd_cat)s)")
+		sql_value = {'prd_cat': category_choice,}
 		cursor.execute(sql_request, sql_value)
 
-		# Exécution de la requête de SELECTION en fonction de la catégorie choisie
+		# Executing SELECT request depending on chosen category
 		myresult = cursor.fetchall()
 		i = 0
-		new_prd_list = []
+		total = []
 
 		for w in myresult:
+			prd_line = []
 			i += 1
-			new_prd_list.append(w[1])
-			print(i,"- ",w[0]," - Code barre:",w[1])
+			print(i,"- ",w[0]," - Indice nutritionnel:",w[1])
+			prd_line.append(w[0])
+			prd_line.append(w[1])
+			total.append(prd_line)
 		
 		loop3 = True
 		while loop3:
+			print()
 			product_choice = input("Votre choix de produit: ")
 			try:
 				product_choice = int(product_choice)
@@ -263,135 +175,74 @@ class Product:
 			else:
 				loop3 = False
 
-		Product.saved_code = new_prd_list[product_choice-1]
-		
+		choosen_prd = total[product_choice-1]		
+		depreciated_product = choosen_prd[0]
+		depreciated_nutrition = choosen_prd[1]
+
 		cursor.close()
+		return depreciated_product, depreciated_nutrition
 
 
-		return Product.saved_code
-
-
-	@classmethod
-	def substitute_show(cls, saved_code, connection):
+	def substitute_show(self, category_choice, prd_to_change_name, prd_to_change_nutrition, connection, database):
 		
-		cursor = connection.cursor()
+		cursor = connection.cursor(buffered=True)
+		cursor.execute("USE {}".format(database))
 
-		# Saving barcode for chosen product
-		sql1_request = ("SELECT name,nutrition_grade,prd_cat FROM Product"
-						" WHERE barcode=(%(barcode)s)")
-		sql1_value = {'barcode': Product.saved_code,}
-		cursor.execute(sql1_request, sql1_value)
-		
-		# Exécution de la requête de SELECTION en fonction de la catégorie choisie
-		myresult1 = cursor.fetchone()
-		name_to_replace = myresult1[0]
-		nutrition_to_replace = myresult1[1]
-		cat_to_keep = myresult1[2]
-
-		sql2_request = ("SELECT name,nutrition_grade,barcode FROM Product"
+		sql_request = ("SELECT name,description,barcode,nutrition_grade,store,url FROM Product"
 						" WHERE prd_cat=(%(prd_cat)s) AND nutrition_grade < (%(nutrition_grade)s)")
-		sql2_value = {	'prd_cat': cat_to_keep,
-						'nutrition_grade': nutrition_to_replace,
-					}
-		cursor.execute(sql2_request, sql2_value)
-		
-		myresult2 = cursor.fetchone()
-		
-		
-		if not myresult2:
+		sql_value = {'prd_cat': category_choice,
+					'nutrition_grade': prd_to_change_nutrition,}
+		cursor.execute(sql_request,sql_value)
+		result = cursor.fetchone()
+
+		if not result:			
+			print()
 			print("Il n'y a pas d'élément meilleur que le votre")
+			print()
+			cursor.close()
+			connection.close()
 		else:
-			
-			print("------------------------------------------------------")
-			print("Produit à remplacer:", name_to_replace, "avec un indice nutritionnel: ", nutrition_to_replace)
-			print("Nom du meilleur produit: ", myresult2[0])
-			print("Indice nutritionnel: ", myresult2[1])
-			print("Code barre: ", myresult2[2])
-			print("------------------------------------------------------")
+			print()
+			print("-----------------------------------------------------------------------------------------")
+			print("Produit à remplacer:", prd_to_change_name, "avec un indice nutritionnel: ", prd_to_change_nutrition)
+			print("Nom du meilleur produit: ", result[0])
+			print("Description du produit: ", result[1])
+			print("Indice nutritionnel: ", result[3])
+			print("Vente en magasin: ", result[4])
+			print("Url du produit: ", result[5])
+			print("-----------------------------------------------------------------------------------------")
+			print()
 			
 			record_result = input("Voulez-vous enregistrer ce résultat? (tapez 'O' ou 'o' pour Oui): ")
 			if record_result not in ["O","o"]:
 				pass
-			else:			
-				connection = mysql.connector.connect(
-								user = user,
-								password = password,
-								host = host,
-								database = dbname)
-				cursor = connection.cursor()
-				add_category = ("INSERT INTO Favourite "
+			else:
+				add_favourite = ("INSERT INTO Favourite "
 								"(prd_to_be_replaced,barcode) "
 								"VALUES (%(prd_to_be_replaced)s, %(barcode)s)")
-				category_value = {
-							'id': cursor.lastrowid,
-							'prd_to_be_replaced': name_to_replace,
-							'barcode': myresult2[2],
+				add_value = {
+							'prd_to_be_replaced': prd_to_change_name,
+							'barcode': result[2],
 							}
 				try:
-					cursor.execute(add_category, category_value)
-					
-					
+					cursor.execute(add_favourite, add_value)					
 				except:
+					print()
 					print("Ce produit de substitution a déjà été enregistré !.")
+					print()
 				else:
-					print("Ce nouveau produit a bien été enregistré dans la base.")
 					connection.commit()
+					print()
+					print("Ce nouveau produit a bien été enregistré dans la base.")
+					print()
 					cursor.close()
 					connection.close()
 
 
-	def launch_interface(self, connection):
-		
-		loop1 = True
-		# Launching main window
-		print("*********************** Application de substitut Alimentaire - Pur Beurre ****************************")
-		print()
-		print("1 - Quel aliment souhaitez-vous remplacer ?")
-		print("2 - Retrouver mes aliments substitués")
-		print("3 - Quitter")
-		print()
-		print("******************************************************************************************************")
 
-		while loop1:		
-			welcome_choice = input("Votre choix de programme: ")
-			try:
-				welcome_choice = int(welcome_choice)
-			except:
-				pass
 
-			if welcome_choice not in [1, 2, 3]:
-				continue
-			else:
-				loop1 = False
 
-		if welcome_choice == 1:			
-			Product.categories_show(categories)
-			Product.products_show(Product.category_choice, connection)
-			Product.substitute_show(Product.saved_code, connection)
 
-		if welcome_choice == 2:
-			cursor = connection.cursor()
-			sql_request = ("SELECT Favourite.prd_to_be_replaced, Product.name, Product.description, Product.store, Product.url "
-							"FROM Favourite INNER JOIN Product "
-							"ON Favourite.barcode=Product.barcode ")
-					
-			cursor.execute(sql_request)
-			results = cursor.fetchall()
 
-			for result in results:
-				print("----------------------------------------------------------------------------------------")
-				print("Produit à substituer:",result[0])
-				print("Meilleur produit:",result[1])
-				print("Description du produit:",result[2])
-				print("Magasin(s) où le trouver:",result[3])
-				print("Lien Web du produit:",result[4])
-				print("----------------------------------------------------------------------------------------")
-
-			cursor.close()
-			connection.close()
-
-		if welcome_choice == 3:
-			print("Merci d'avoir utilisé ce programme.")
-			exit(1)
 
 

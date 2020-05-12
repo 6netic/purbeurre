@@ -1,9 +1,9 @@
-The goal of this application is to propose you a better aliment than the one you're going to use.
+The goal of this application is to suggest a better aliment than the one you're going to use.
 It's based on the nutritional grade, provided for each food.
 Only one substitute will be suggested in this program.
 Thus, you could find no better product than yours if it has the best grade.
 When a substitute is found, you can save it to the database when typing in 'O' or 'o'.
-You can change the categories content stored in constants.py file.
+You can change the categories content stored in start.py file.
 This program is developped with Python v.3.7.6
 Librairies requested are : requests and mysql.connector.
 
