@@ -62,27 +62,7 @@ while main_loop:
 		first_product.substitute_show(category_choice, prd_to_change_name, prd_to_change_nutrition, connection, database)
 
 	if welcome_choice == 2:
-		cursor = connection.cursor()
-		cursor.execute("USE {}".format(database))
-		sql_request = ("SELECT Favourite.prd_to_be_replaced, Product.name, Product.description, Product.store, Product.url, Product.nutrition_grade "
-						"FROM Favourite INNER JOIN Product "
-						"ON Favourite.barcode=Product.barcode ")
-				
-		cursor.execute(sql_request)
-		results = cursor.fetchall()
-
-		for result in results:
-			print("----------------------------------------------------------------------------------------")
-			print("Produit à substituer:",result[0])
-			print("Meilleur produit:",result[1])
-			print("Description du produit:",result[2])
-			print("Indice nutritionnel:",result[5])
-			print("Magasin(s) où le trouver:",result[3])
-			print("Lien Web du produit:",result[4])
-			print("----------------------------------------------------------------------------------------")
-
-		cursor.close()
-		connection.close()
+		first_product.substitute_list(connection, database)
 
 	if welcome_choice == 3:
 		print("Merci d'avoir utilisé ce programme.")

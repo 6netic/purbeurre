@@ -4,7 +4,7 @@ from mysql.connector import errorcode
 
 
 class Database:
-	
+	"""This class creates the database and the three tables"""	
 
 	def database_tables_creation(self, connection, database):
 
