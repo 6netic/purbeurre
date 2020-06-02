@@ -1,8 +1,7 @@
-
 import mysql.connector
 
 class Connection:
-	"""This class contains credentials to connect to the DBMS"""
+	"""This class holds credentials to connect to MySQL DBMS"""
 
 	def __init__(self):
 		self.username = "ooc_student"
@@ -10,7 +9,7 @@ class Connection:
 		self.hostname = "localhost"
 
 		
-	def databaseConnect(self):
+	def connect_to_dbms(self):
 				
 		connection = mysql.connector.connect(
 			user = self.username,
