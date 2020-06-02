@@ -51,8 +51,6 @@ def initiate_app():
 	my_view.show_result_insert_categories_products(result_products, insert_data_into_category_product_result)
 
 
-#Launch Initiation
-#initiate_app()
 
 def search_save_food():
 	"""This method launches the application"""
@@ -113,8 +111,6 @@ def search_save_food():
 			saving_result = my_favourite.save_substitute(selected_category, selected_product, result)
 			my_view.show_save_substitute(saving_result)
 
-	
-#search_save_food()
 
 
 def show_saved_substitute_list():
@@ -130,9 +126,6 @@ def show_saved_substitute_list():
 	old_prd_result = my_product.retrieve_old_prd()
 	substitute_results = my_favourite.list_substitutes()	
 	my_view.show_list_saved_substitutes(old_prd_result, substitute_results)
-
-
-#show_saved_substitute_list()
 
 
 
